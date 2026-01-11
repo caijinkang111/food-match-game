@@ -54,22 +54,23 @@ body {
     text-align: center;
 }
 
-/* 游戏画布容器 - 自适应大小 */
+/* 修改：游戏画布容器 - 自适应大小，允许滚动 */
 .canvas-container {
     position: relative;
     background: #ffffff;
     border-radius: 10px;
-    overflow: hidden;
+    overflow: auto; /* 改为 auto，允许滚动 */
     border: 2px solid #3498db;
     margin-bottom: 10px;
     display: flex;
     justify-content: center;
-    align-items: center;
-    width: 100%; /* 让容器宽度充满父元素 */
-    height: 70vh; /* 使用视口高度单位，更灵活 */
-    min-height: 500px; /* 最小高度 */
-    max-height: 900px; /* 最大高度 */
-    margin: 0 auto; /* 居中 */
+    align-items: flex-start; /* 改为 flex-start，顶部对齐 */
+    width: 100%;
+    height: 75vh; /* 增加一点高度 */
+    min-height: 500px;
+    max-height: none; /* 移除最大高度限制 */
+    margin: 0 auto;
+    padding: 10px; /* 添加内边距 */
 }
 
 #game-canvas {
@@ -157,7 +158,7 @@ body {
     color: #2c3e50;
 }
 
-/* 游戏控制按钮 */
+/* 修改：游戏控制按钮容器 */
 .game-controls {
     display: flex;
     justify-content: center;
@@ -166,6 +167,7 @@ body {
     padding: 10px 0;
     min-height: 60px;
     align-items: center;
+    flex-shrink: 0; /* 防止按钮区域被压缩 */
 }
 
 .btn {
@@ -208,6 +210,47 @@ body {
     color: white;
 }
 
+/* 添加方向提示样式 */
+.orientation-hint {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    color: white;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+}
+
+.orientation-hint h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    color: #FFD166;
+}
+
+.orientation-hint p {
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+    max-width: 600px;
+}
+
+.orientation-hint .continue-btn {
+    padding: 15px 30px;
+    background: #2ecc71;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
 /* 响应式设计 */
 @media (max-width: 1400px) {
     .container {
@@ -217,17 +260,43 @@ body {
 
 @media (max-width: 1000px) {
     .container {
-        max-width: 95vw;
-        padding: 10px;
+        max-width: 98vw;
+        padding: 8px;
+        height: auto;
+        min-height: 90vh;
     }
     
-    .game-header h1 {
-        font-size: 1.5rem;
+    .canvas-container {
+        height: 70vh;
+        min-height: 450px;
+    }
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+    /* 竖屏模式下 */
+    .container {
+        max-height: 95vh;
     }
     
     .canvas-container {
         height: 65vh;
-        min-height: 450px;
+        min-height: 400px;
+    }
+    
+    .game-header h1 {
+        font-size: 1.4rem;
+    }
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
+    /* 横屏模式下 */
+    .container {
+        max-height: 98vh;
+    }
+    
+    .canvas-container {
+        height: 80vh;
+        min-height: 350px;
     }
 }
 
@@ -293,6 +362,21 @@ body {
         padding: 8px 12px;
         min-width: 90px;
         font-size: 0.8rem;
+    }
+}
+
+/* 对于极端的宽高比 */
+@media (max-aspect-ratio: 3/4) {
+    /* 非常高的屏幕（如某些平板竖屏） */
+    .canvas-container {
+        height: 60vh;
+    }
+}
+
+@media (min-aspect-ratio: 4/3) {
+    /* 非常宽的屏幕（如某些平板横屏） */
+    .canvas-container {
+        height: 85vh;
     }
 }
 
