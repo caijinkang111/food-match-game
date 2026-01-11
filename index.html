@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>美食匹配大作战</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -16,7 +16,10 @@
         <!-- 游戏画布容器 -->
         <div class="canvas-container">
             <div id="loading-screen" class="loading-screen">
-                <div class="spinner"></div>
+                <div class="spinner">
+                    <div class="double-bounce1"></div>
+                    <div class="double-bounce2"></div>
+                </div>
                 <div class="loading-text">
                     <p>加载游戏中...</p>
                     <div class="progress-bar">
