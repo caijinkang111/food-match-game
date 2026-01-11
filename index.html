@@ -7,17 +7,20 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- 方向提示（初始隐藏） -->
-    <div id="orientation-hint" class="orientation-hint">
-        <h2>🎮 最佳游戏体验提示</h2>
-        <p id="hint-text">横屏模式能获得更好的游戏视野！</p>
-        <button id="continue-btn" class="continue-btn">继续游戏</button>
-    </div>
-
     <div class="container">
-        <!-- 游戏标题栏 -->
+        <!-- 游戏标题栏 - 修改：标题和按钮在同一行 -->
         <div class="game-header">
-            <h1>美食匹配大作战</h1>
+            <div class="header-content">
+                <h1>美食匹配大作战</h1>
+                <div class="header-buttons">
+                    <button id="start-btn" class="btn btn-primary">
+                        开始游戏
+                    </button>
+                    <button id="restart-btn" class="btn btn-secondary" disabled>
+                        重新开始
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- 游戏画布容器 -->
@@ -37,65 +40,8 @@
             </div>
             <canvas id="game-canvas"></canvas>
         </div>
-
-        <!-- 游戏控制按钮 -->
-        <div class="game-controls">
-            <button id="start-btn" class="btn btn-primary">
-                开始游戏
-            </button>
-            <button id="restart-btn" class="btn btn-secondary" disabled>
-                重新开始
-            </button>
-        </div>
     </div>
 
     <script src="game.js"></script>
-    <script>
-        // 方向提示逻辑
-        document.addEventListener('DOMContentLoaded', function() {
-            const orientationHint = document.getElementById('orientation-hint');
-            const hintText = document.getElementById('hint-text');
-            const continueBtn = document.getElementById('continue-btn');
-            
-            // 检测是否移动设备
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
-            // 显示方向提示的逻辑
-            function checkOrientation() {
-                if (!isMobile) return;
-                
-                const width = window.innerWidth;
-                const height = window.innerHeight;
-                const isPortrait = height > width;
-                
-                // 根据屏幕比例决定是否显示提示
-                const aspectRatio = width / height;
-                
-                if (isPortrait && aspectRatio < 0.8) {
-                    // 非常竖屏的设备
-                    hintText.textContent = "检测到竖屏模式，建议将设备横置以获得最佳游戏体验！";
-                    orientationHint.style.display = 'flex';
-                } else if (!isPortrait && aspectRatio > 1.8) {
-                    // 非常宽屏的设备
-                    hintText.textContent = "检测到横屏模式，游戏体验更佳！";
-                    orientationHint.style.display = 'flex';
-                }
-            }
-            
-            // 继续按钮点击事件
-            continueBtn.addEventListener('click', function() {
-                orientationHint.style.display = 'none';
-            });
-            
-            // 初始检测
-            setTimeout(checkOrientation, 1000);
-            
-            // 方向变化时重新检测
-            window.addEventListener('resize', checkOrientation);
-            window.addEventListener('orientationchange', function() {
-                setTimeout(checkOrientation, 500);
-            });
-        });
-    </script>
 </body>
 </html>
