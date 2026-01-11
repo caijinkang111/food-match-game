@@ -64,18 +64,8 @@ class AudioImageGame {
         this.scaleFactor = 1;
         this.dpr = 1; // 设备像素比
         
-        // 新增：方向检测变量
-        this.currentOrientation = this.getOrientation();
-        
         // 初始化
         this.init();
-    }
-    
-    // 新增：获取当前方向
-    getOrientation() {
-        const width = document.documentElement.clientWidth;
-        const height = document.documentElement.clientHeight;
-        return width > height ? 'landscape' : 'portrait';
     }
     
     // 初始化游戏
@@ -90,20 +80,12 @@ class AudioImageGame {
         // 计算并设置固定画布尺寸
         this.calculateAndSetCanvasSize();
         
-        // 添加方向变化监听
+        // 添加窗口大小变化监听
         window.addEventListener('resize', () => {
             setTimeout(() => {
                 this.calculateAndSetCanvasSize();
                 this.draw();
             }, 100);
-        });
-        
-        // 针对移动设备的方向变化事件
-        window.addEventListener('orientationchange', () => {
-            setTimeout(() => {
-                this.calculateAndSetCanvasSize();
-                this.draw();
-            }, 300);
         });
         
         // 加载资源
@@ -122,47 +104,22 @@ class AudioImageGame {
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
     }
     
-    // 修改：增强画布计算逻辑，根据方向调整
+    // 计算并设置画布大小（优化版，适合所有设备）
     calculateAndSetCanvasSize() {
-        // 更新当前方向
-        this.currentOrientation = this.getOrientation();
-        
         // 更兼容的视口尺寸获取方式
         const clientWidth = document.documentElement.clientWidth;
         const clientHeight = document.documentElement.clientHeight;
         
-        console.log(`设备视口大小: ${clientWidth}x${clientHeight}, 方向: ${this.currentOrientation}`);
+        console.log(`设备视口大小: ${clientWidth}x${clientHeight}`);
         
-        // 根据方向调整基础尺寸和缩放策略
-        let baseWidth, baseHeight, maxScale;
+        // 基础尺寸
+        const baseWidth = 1200;
+        const baseHeight = 800;
         
-        if (this.currentOrientation === 'landscape') {
-            // 横屏模式：优先保证宽度完整显示，高度可滚动
-            baseWidth = 1200;
-            baseHeight = 800;
-            maxScale = 1.5; // 横屏可以放大更多
-        } else {
-            // 竖屏模式：优先保证高度完整显示，宽度可适当压缩
-            baseWidth = 1000; // 竖屏时稍微减小基础宽度
-            baseHeight = 700; // 对应减小高度
-            maxScale = 1.3;
-        }
-        
-        // 计算缩放因子时，使用更智能的策略
+        // 计算宽度和高度的独立缩放比，取较小值以保证内容始终完整显示
         const scaleX = clientWidth / baseWidth;
         const scaleY = clientHeight / baseHeight;
-        
-        // 根据方向选择不同的缩放策略
-        let scaleFactor;
-        if (this.currentOrientation === 'landscape') {
-            // 横屏：确保高度能完整显示，宽度可以按比例缩放
-            scaleFactor = Math.min(scaleY, scaleX, maxScale);
-        } else {
-            // 竖屏：确保宽度能完整显示，高度可以按比例缩放
-            scaleFactor = Math.min(scaleX, scaleY, maxScale);
-        }
-        
-        this.scaleFactor = scaleFactor;
+        this.scaleFactor = Math.min(scaleX, scaleY, 1.2); // 限制最大放大到1.2倍
         
         // 根据缩放因子计算最终画布尺寸
         this.fixedCanvasWidth = Math.round(baseWidth * this.scaleFactor);
@@ -186,7 +143,7 @@ class AudioImageGame {
         
         console.log(`计算后画布大小: ${this.fixedCanvasWidth}x${this.fixedCanvasHeight}, 缩放因子: ${this.scaleFactor}`);
         
-        // 设备像素比处理保持不变
+        // 设备像素比
         this.dpr = window.devicePixelRatio || 1;
         console.log(`设备像素比（DPR）: ${this.dpr}`);
         
@@ -416,13 +373,11 @@ class AudioImageGame {
     setupEventListeners() {
         // 开始按钮
         document.getElementById('start-btn').addEventListener('click', () => {
-            // 开始游戏时不播放音效
             this.startGame();
         });
         
         // 重新开始按钮
         document.getElementById('restart-btn').addEventListener('click', () => {
-            // 重新开始游戏时不播放音效
             this.restartGame();
         });
         
@@ -450,7 +405,7 @@ class AudioImageGame {
         }
     }
     
-    // 修改：开始游戏方法，确保使用最新的尺寸计算位置
+    // 开始游戏
     startGame() {
         console.log('开始游戏');
         
@@ -462,9 +417,6 @@ class AudioImageGame {
         this.currentPlayingAudio = -1;
         
         this.selectRandomPairs();
-        
-        // 确保使用最新的尺寸计算位置
-        this.calculateAndSetCanvasSize();
         this.calculatePositions();
         this.updateUI();
         
@@ -508,71 +460,48 @@ class AudioImageGame {
         }
     }
     
-    // 修改：增强calculatePositions方法，根据方向调整位置
+    // 计算位置 - 基于固定画布大小和缩放因子
     calculatePositions() {
         const canvasWidth = this.fixedCanvasWidth;
         const canvasHeight = this.fixedCanvasHeight;
-        
-        // 根据方向调整元素间距
-        const isLandscape = this.currentOrientation === 'landscape';
         
         // 使用缩放因子调整元素大小（CSS像素）
         const imageSize = this.config.imageSize * this.scaleFactor;
         const plateSize = this.config.plateSize * this.scaleFactor;
         const audioButtonSize = this.config.audioButtonSize * this.scaleFactor;
         
-        // 根据方向调整间距
-        let spacing, topMargin, plateOffset, audioButtonOffset;
+        // 计算间距，确保所有元素都显示在画布内
+        const totalWidthNeeded = this.config.matchesNeeded * imageSize;
+        const availableSpace = canvasWidth - totalWidthNeeded;
+        const spacing = Math.max(availableSpace / (this.config.matchesNeeded + 1), 20 * this.scaleFactor);
         
-        if (isLandscape) {
-            // 横屏：元素可以分散一些
-            spacing = Math.max(canvasWidth * 0.05, 20 * this.scaleFactor);
-            topMargin = canvasHeight * 0.08;
-            plateOffset = canvasHeight * 0.25;
-            audioButtonOffset = 25 * this.scaleFactor;
-        } else {
-            // 竖屏：元素需要紧凑一些
-            spacing = Math.max(canvasWidth * 0.03, 15 * this.scaleFactor);
-            topMargin = canvasHeight * 0.05;
-            plateOffset = canvasHeight * 0.22;
-            audioButtonOffset = 20 * this.scaleFactor;
+        const topMargin = 60 * this.scaleFactor;
+        const plateOffset = 200 * this.scaleFactor;
+        const audioButtonOffset = 25 * this.scaleFactor;
+        
+        const xPositions = [];
+        for (let i = 0; i < this.config.matchesNeeded; i++) {
+            xPositions.push(spacing + i * (imageSize + spacing));
         }
         
-        // 计算位置
-        const totalWidthNeeded = this.config.matchesNeeded * imageSize + 
-                                (this.config.matchesNeeded - 1) * spacing;
-        
-        // 如果总宽度超过画布，减少间距
-        if (totalWidthNeeded > canvasWidth * 0.95) {
-            spacing = (canvasWidth * 0.95 - this.config.matchesNeeded * imageSize) / 
-                     (this.config.matchesNeeded - 1);
-            spacing = Math.max(spacing, 10 * this.scaleFactor);
-        }
-        
-        const startX = (canvasWidth - (this.config.matchesNeeded * imageSize + 
-                      (this.config.matchesNeeded - 1) * spacing)) / 2;
-        
-        // 计算图片位置（顶部）
         this.imagePositions = [];
         this.originalPositions = [];
         
         const randomOrder = this.shuffleArray([...Array(this.config.matchesNeeded).keys()]);
         for (let i = 0; i < this.config.matchesNeeded; i++) {
-            const x = startX + randomOrder[i] * (imageSize + spacing);
+            const x = xPositions[randomOrder[i]];
             const y = topMargin;
             this.imagePositions.push({ x, y });
             this.originalPositions.push({ x, y });
         }
         
-        // 计算盘子位置（底部）
         this.platePositions = [];
         for (let i = 0; i < this.config.matchesNeeded; i++) {
-            const x = startX + i * (imageSize + spacing);
+            const x = xPositions[i];
             const y = topMargin + imageSize + plateOffset;
             this.platePositions.push({ x, y });
         }
         
-        // 计算音频按钮位置
         this.audioButtonPositions = [];
         for (let i = 0; i < this.config.matchesNeeded; i++) {
             const plateX = this.platePositions[i].x;
@@ -618,8 +547,6 @@ class AudioImageGame {
         const x = cssX * scaleX;
         const y = cssY * scaleY;
         
-        console.log(`鼠标点击: CSS坐标(${cssX}, ${cssY}) -> Canvas坐标(${x}, ${y})`);
-        
         // 检查音频按钮
         for (let i = 0; i < this.audioButtonPositions.length; i++) {
             const pos = this.audioButtonPositions[i];
@@ -632,10 +559,7 @@ class AudioImageGame {
             
             const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
             
-            console.log(`按钮${i}: 绘制位置(${buttonX}, ${buttonY}), 中心(${centerX}, ${centerY}), 距离${distance}, 半径${size/2}`);
-            
             if (distance <= size / 2) {
-                console.log(`点击了音频按钮 ${i}`);
                 this.playAudio(i);
                 return;
             }
