@@ -1,0 +1,278 @@
+/* 基础重置和字体 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    color: #333;
+    line-height: 1.4;
+    overflow: auto; /* 允许滚动 */
+}
+
+/* 主容器 - 自适应大小设计 */
+.container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-width: 95vw;
+    max-height: 95vh;
+    margin: auto; /* 居中 */
+}
+
+/* 游戏标题栏 - 简洁版本 */
+.game-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 0;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+    min-height: 60px;
+}
+
+.game-header h1 {
+    color: #2c3e50;
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    text-align: center;
+}
+
+/* 游戏画布容器 - 自适应大小 */
+.canvas-container {
+    position: relative;
+    background: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid #3498db;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 800px; /* 最小宽度 */
+    min-height: 600px; /* 最小高度 */
+    max-width: 1400px; /* 最大宽度 */
+    max-height: 900px; /* 最大高度 */
+    margin: 0 auto; /* 居中 */
+}
+
+#game-canvas {
+    display: block;
+    cursor: pointer;
+    background-color: #ffffff;
+}
+
+/* 加载屏幕 */
+.loading-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.double-bounce1, .double-bounce2 {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: #3498db;
+    opacity: 0.6;
+    position: absolute;
+    top: 0;
+    left: 0;
+    animation: sk-bounce 2.0s infinite ease-in-out;
+}
+
+.double-bounce2 {
+    animation-delay: -1.0s;
+}
+
+@keyframes sk-bounce {
+    0%, 100% { transform: scale(0.0); }
+    50% { transform: scale(1.0); }
+}
+
+.loading-text {
+    text-align: center;
+    color: #2c3e50;
+}
+
+.loading-text p {
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+.progress-bar {
+    width: 250px;
+    height: 15px;
+    background: #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 0 auto 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3498db, #2ecc71);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 8px;
+}
+
+#loading-percentage {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #2c3e50;
+}
+
+/* 游戏控制按钮 */
+.game-controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 10px;
+    padding: 10px 0;
+    min-height: 60px;
+    align-items: center;
+}
+
+.btn {
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 120px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #2ecc71, #1abc9c);
+    color: white;
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+/* 响应式设计 */
+@media (max-width: 1400px) {
+    .container {
+        max-width: 90vw;
+    }
+}
+
+@media (max-width: 1000px) {
+    .container {
+        max-width: 95vw;
+        padding: 10px;
+    }
+    
+    .game-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .canvas-container {
+        min-width: 700px;
+        min-height: 500px;
+    }
+}
+
+@media (max-width: 800px) {
+    body {
+        padding: 5px;
+    }
+    
+    .container {
+        max-width: 98vw;
+        padding: 8px;
+    }
+    
+    .game-header h1 {
+        font-size: 1.3rem;
+    }
+    
+    .canvas-container {
+        min-width: 600px;
+        min-height: 450px;
+    }
+    
+    .btn {
+        padding: 10px 15px;
+        min-width: 100px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 650px) {
+    /* 在小屏幕上显示提示信息 */
+    body::before {
+        content: "游戏需要较大屏幕空间，请在电脑或平板上打开";
+        display: block;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        z-index: 100;
+        text-align: center;
+        width: 90%;
+        max-width: 300px;
+    }
+    
+    .container {
+        opacity: 0.3;
+    }
+}
