@@ -1,5 +1,5 @@
 /**
- * 美食匹配大作战 - 修改版
+ * 美食匹配大作战 - 修复版（兼容电脑和平板）
  */
 
 class AudioImageGame {
@@ -58,10 +58,11 @@ class AudioImageGame {
         this.ctx = null;
         this.loadingScreen = null;
         
-        // 画布固定大小
+        // 画布固定大小和设备像素比
         this.fixedCanvasWidth = 0;
         this.fixedCanvasHeight = 0;
         this.scaleFactor = 1;
+        this.dpr = 1; // 设备像素比
         
         // 初始化
         this.init();
@@ -98,66 +99,52 @@ class AudioImageGame {
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
     }
     
-    // 计算并设置画布大小
+    // 计算并设置画布大小（优化版，适合所有设备）
     calculateAndSetCanvasSize() {
-        // 获取当前窗口的可用大小
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
+        // 方法一：更兼容的视口尺寸获取方式
+        const clientWidth = document.documentElement.clientWidth;
+        const clientHeight = document.documentElement.clientHeight;
         
-        console.log(`窗口大小: ${windowWidth}x${windowHeight}`);
+        console.log(`设备视口大小: ${clientWidth}x${clientHeight}`);
         
-        // 根据窗口大小计算画布尺寸
-        // 我们想要一个适应窗口但保持固定比例的画布
-        const maxWidth = 1400;
-        const maxHeight = 900;
-        const minWidth = 800;
-        const minHeight = 600;
+        // 计算缩放因子时，使用更保守的基础尺寸
+        const baseWidth = 1200;
+        const baseHeight = 800;
         
-        // 计算可用空间（减去一些边距和控件空间）
-        const margin = 40;
-        const headerHeight = 80;
-        const controlsHeight = 80;
+        // 计算宽度和高度的独立缩放比，取较小值以保证内容始终完整显示
+        const scaleX = clientWidth / baseWidth;
+        const scaleY = clientHeight / baseHeight;
+        this.scaleFactor = Math.min(scaleX, scaleY, 1.2); // 限制最大放大到1.2倍
         
-        const availableWidth = windowWidth - margin * 2;
-        const availableHeight = windowHeight - headerHeight - controlsHeight - margin * 2;
+        // 根据缩放因子计算最终画布尺寸
+        this.fixedCanvasWidth = Math.round(baseWidth * this.scaleFactor);
+        this.fixedCanvasHeight = Math.round(baseHeight * this.scaleFactor);
         
-        // 计算合适的画布尺寸
-        let canvasWidth = Math.min(maxWidth, availableWidth);
-        let canvasHeight = Math.min(maxHeight, availableHeight);
+        console.log(`计算后画布大小: ${this.fixedCanvasWidth}x${this.fixedCanvasHeight}, 缩放因子: ${this.scaleFactor}`);
         
-        // 确保最小尺寸
-        canvasWidth = Math.max(minWidth, canvasWidth);
-        canvasHeight = Math.max(minHeight, canvasHeight);
+        // 关键：考虑设备像素比（DPI），防止高清屏模糊
+        this.dpr = window.devicePixelRatio || 1;
+        console.log(`设备像素比（DPR）: ${this.dpr}`);
         
-        // 保持16:9的比例
-        const targetRatio = 16 / 9;
-        const currentRatio = canvasWidth / canvasHeight;
+        // 设置画布的"显示尺寸"（CSS像素）
+        this.canvas.style.width = `${this.fixedCanvasWidth}px`;
+        this.canvas.style.height = `${this.fixedCanvasHeight}px`;
         
-        if (currentRatio > targetRatio) {
-            // 太宽了，调整宽度
-            canvasWidth = canvasHeight * targetRatio;
-        } else if (currentRatio < targetRatio) {
-            // 太高了，调整高度
-            canvasHeight = canvasWidth / targetRatio;
-        }
+        // 设置画布的"实际渲染尺寸"（物理像素）
+        this.canvas.width = Math.round(this.fixedCanvasWidth * this.dpr);
+        this.canvas.height = Math.round(this.fixedCanvasHeight * this.dpr);
         
-        // 再次确保不超过最大尺寸
-        canvasWidth = Math.min(maxWidth, canvasWidth);
-        canvasHeight = Math.min(maxHeight, canvasHeight);
+        // 重置变换矩阵，确保坐标系是1:1的（不缩放上下文）
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
         
-        console.log(`设置画布大小: ${canvasWidth}x${canvasHeight}`);
-        
-        // 设置固定画布尺寸
-        this.fixedCanvasWidth = canvasWidth;
-        this.fixedCanvasHeight = canvasHeight;
-        
-        this.canvas.width = this.fixedCanvasWidth;
-        this.canvas.height = this.fixedCanvasHeight;
-        
-        // 计算缩放因子（相对于基础尺寸1200x800）
-        this.scaleFactor = Math.min(canvasWidth / 1200, canvasHeight / 800, 1.2);
-        
-        console.log(`缩放因子: ${this.scaleFactor}`);
+        // 添加调试信息
+        console.log('Canvas尺寸:', {
+            'css宽度': this.canvas.style.width,
+            'css高度': this.canvas.style.height,
+            '实际宽度': this.canvas.width,
+            '实际高度': this.canvas.height,
+            '设备像素比': this.dpr
+        });
     }
     
     // 加载资源
@@ -462,12 +449,12 @@ class AudioImageGame {
         }
     }
     
-    // 计算位置 - 基于固定画布大小和缩放因子
+    // 计算位置 - 基于固定画布大小和缩放因子（记录CSS像素位置）
     calculatePositions() {
         const canvasWidth = this.fixedCanvasWidth;
         const canvasHeight = this.fixedCanvasHeight;
         
-        // 使用缩放因子调整元素大小
+        // 使用缩放因子调整元素大小（CSS像素）
         const imageSize = this.config.imageSize * this.scaleFactor;
         const plateSize = this.config.plateSize * this.scaleFactor;
         const audioButtonSize = this.config.audioButtonSize * this.scaleFactor;
@@ -510,33 +497,65 @@ class AudioImageGame {
             const plateY = this.platePositions[i].y;
             const x = plateX + (imageSize - audioButtonSize) / 2;
             const y = plateY + plateSize + audioButtonOffset;
-            this.audioButtonPositions.push({ x, y, size: audioButtonSize });
+            this.audioButtonPositions.push({ 
+                x, 
+                y, 
+                size: audioButtonSize,
+                // 计算实际绘制尺寸（乘以dpr）
+                drawX: x * this.dpr,
+                drawY: y * this.dpr,
+                drawSize: audioButtonSize * this.dpr
+            });
         }
         
         this.currentSizes = {
             imageSize,
             plateSize,
             audioButtonSize,
-            scaleFactor: this.scaleFactor
+            scaleFactor: this.scaleFactor,
+            // 实际绘制尺寸（乘以dpr）
+            drawImageSize: imageSize * this.dpr,
+            drawPlateSize: plateSize * this.dpr,
+            drawAudioButtonSize: audioButtonSize * this.dpr
         };
     }
     
-    // 处理鼠标按下
+    // 处理鼠标按下 - 修复版：正确处理坐标转换
     handleMouseDown(e) {
         if (this.gameState !== 'gaming') return;
         
         const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        
+        // 关键：坐标转换考虑CSS缩放和DPR
+        // 获取鼠标相对于canvas的位置（CSS像素）
+        const cssX = e.clientX - rect.left;
+        const cssY = e.clientY - rect.top;
+        
+        // 转换为canvas实际坐标（考虑canvas.style.width/height与canvas.width/height的比例）
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        
+        const x = cssX * scaleX;
+        const y = cssY * scaleY;
+        
+        console.log(`鼠标点击: CSS坐标(${cssX}, ${cssY}) -> Canvas坐标(${x}, ${y})`);
         
         // 检查音频按钮
         for (let i = 0; i < this.audioButtonPositions.length; i++) {
             const pos = this.audioButtonPositions[i];
-            const centerX = pos.x + pos.size / 2;
-            const centerY = pos.y + pos.size / 2;
+            // 使用预计算的绘制尺寸
+            const size = pos.drawSize;
+            const buttonX = pos.drawX;
+            const buttonY = pos.drawY;
+            const centerX = buttonX + size / 2;
+            const centerY = buttonY + size / 2;
+            
             const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
             
-            if (distance <= pos.size / 2) {
+            console.log(`按钮${i}: 绘制位置(${buttonX}, ${buttonY}), 中心(${centerX}, ${centerY}), 距离${distance}, 半径${size/2}`);
+            
+            if (distance <= size / 2) {
+                console.log(`点击了音频按钮 ${i}`);
                 this.playAudio(i);
                 return;
             }
@@ -547,13 +566,16 @@ class AudioImageGame {
             if (this.correctMatches[i]) continue;
             
             const pos = this.imagePositions[i];
-            const size = this.currentSizes.imageSize;
+            const size = this.currentSizes.drawImageSize;
+            const imageX = pos.x * this.dpr;
+            const imageY = pos.y * this.dpr;
             
-            if (x >= pos.x && x <= pos.x + size && y >= pos.y && y <= pos.y + size) {
+            if (x >= imageX && x <= imageX + size && y >= imageY && y <= imageY + size) {
                 this.isDragging = true;
                 this.draggingIndex = i;
-                this.dragOffset.x = x - pos.x;
-                this.dragOffset.y = y - pos.y;
+                // 注意：dragOffset需要转换为CSS像素坐标用于拖动计算
+                this.dragOffset.x = (x - imageX) / this.dpr;
+                this.dragOffset.y = (y - imageY) / this.dpr;
                 break;
             }
         }
@@ -564,8 +586,14 @@ class AudioImageGame {
         if (!this.isDragging || this.draggingIndex === -1) return;
         
         const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const cssX = e.clientX - rect.left;
+        const cssY = e.clientY - rect.top;
+        
+        // 转换为CSS像素坐标（用于存储位置）
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        const x = (cssX * scaleX) / this.dpr;
+        const y = (cssY * scaleY) / this.dpr;
         
         this.imagePositions[this.draggingIndex].x = x - this.dragOffset.x;
         this.imagePositions[this.draggingIndex].y = y - this.dragOffset.y;
@@ -578,14 +606,14 @@ class AudioImageGame {
         this.isDragging = false;
         const draggedIndex = this.draggingIndex;
         const draggedPos = this.imagePositions[draggedIndex];
-        const imageSize = this.currentSizes.imageSize;
+        const imageSize = this.currentSizes.imageSize; // CSS像素尺寸
         let isMatched = false;
         
         for (let i = 0; i < this.platePositions.length; i++) {
             const platePos = this.platePositions[i];
-            const plateSize = this.currentSizes.plateSize;
+            const plateSize = this.currentSizes.plateSize; // CSS像素尺寸
             
-            // 矩形碰撞检测：检查食物图片和盘子图片是否有重叠
+            // 矩形碰撞检测：检查食物图片和盘子图片是否有重叠（使用CSS像素坐标）
             const isColliding = this.checkCollision(
                 draggedPos.x, draggedPos.y, imageSize, imageSize,
                 platePos.x, platePos.y, plateSize, plateSize
@@ -601,7 +629,7 @@ class AudioImageGame {
                     
                     // 调整图片位置：食物图片在盘子正上方，底端与盘子顶端重合，水平居中对齐
                     this.imagePositions[draggedIndex].x = platePos.x + (plateSize - imageSize) / 2;
-                    this.imagePositions[draggedIndex].y = platePos.y - imageSize + 15; // 底端与盘子顶端重合，稍微重叠
+                    this.imagePositions[draggedIndex].y = platePos.y - imageSize + 15 * this.scaleFactor; // 底端与盘子顶端重合，稍微重叠
                     
                     // 匹配正确时播放 r.mp3 音效
                     this.playSound('correct');
@@ -637,7 +665,7 @@ class AudioImageGame {
         this.draggingIndex = -1;
     }
     
-    // 检查矩形碰撞
+    // 检查矩形碰撞（使用CSS像素坐标）
     checkCollision(ax, ay, aw, ah, bx, by, bw, bh) {
         return ax < bx + bw &&
                ax + aw > bx &&
@@ -785,31 +813,31 @@ class AudioImageGame {
         // 不显示任何文字或其他元素，只有背景图片
     }
     
-    // 绘制游戏界面
+    // 绘制游戏界面 - 修复版：所有绘制都考虑dpr
     drawGame() {
         const ctx = this.ctx;
-        const width = this.canvas.width;
-        const height = this.canvas.height;
         
-        // 白色背景
+        // 白色背景 - 使用实际canvas尺寸
         ctx.fillStyle = this.config.colors.white;
-        ctx.fillRect(0, 0, width, height);
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
         // 绘制盘子
         for (let i = 0; i < this.platePositions.length; i++) {
             const pos = this.platePositions[i];
-            const size = this.currentSizes.plateSize;
+            const size = this.currentSizes.drawPlateSize;
+            const x = pos.x * this.dpr;
+            const y = pos.y * this.dpr;
             
             if (this.plateImage && this.plateImage.complete) {
-                // 绘制盘子图片
-                ctx.drawImage(this.plateImage, pos.x, pos.y, size, size);
+                // 绘制盘子图片 - 使用乘以dpr后的坐标和尺寸
+                ctx.drawImage(this.plateImage, x, y, size, size);
             } else {
                 // 如果盘子图片未加载，使用备用图形
                 ctx.fillStyle = this.config.colors.plate;
                 ctx.beginPath();
                 ctx.ellipse(
-                    pos.x + size / 2,
-                    pos.y + size / 2,
+                    x + size / 2,
+                    y + size / 2,
                     size * 0.45,
                     size * 0.35,
                     0, 0, Math.PI * 2
@@ -817,7 +845,7 @@ class AudioImageGame {
                 ctx.fill();
                 
                 ctx.strokeStyle = this.config.colors.plateBorder;
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 3 * this.dpr * this.scaleFactor;
                 ctx.stroke();
             }
         }
@@ -829,7 +857,9 @@ class AudioImageGame {
             const imgKey = this.images[i];
             const img = this.foodImages[imgKey];
             const pos = this.imagePositions[i];
-            const size = this.currentSizes.imageSize;
+            const size = this.currentSizes.drawImageSize;
+            const x = pos.x * this.dpr;
+            const y = pos.y * this.dpr;
             
             if (img && img.complete) {
                 if (this.isDragging && i === this.draggingIndex) {
@@ -837,13 +867,13 @@ class AudioImageGame {
                 }
                 
                 // 绘制圆角图片
-                this.roundImage(ctx, img, pos.x, pos.y, size, size, 15 * this.scaleFactor);
+                this.roundImage(ctx, img, x, y, size, size, 15 * this.dpr * this.scaleFactor);
                 ctx.globalAlpha = 1.0;
                 
                 // 绘制边框
                 ctx.strokeStyle = this.config.colors.black;
-                ctx.lineWidth = 2 * this.scaleFactor;
-                this.roundRect(ctx, pos.x - 2, pos.y - 2, size + 4, size + 4, 17 * this.scaleFactor);
+                ctx.lineWidth = 2 * this.dpr * this.scaleFactor;
+                this.roundRect(ctx, x - 2 * this.dpr, y - 2 * this.dpr, size + 4 * this.dpr, size + 4 * this.dpr, 17 * this.dpr * this.scaleFactor);
                 ctx.stroke();
             }
         }
@@ -855,16 +885,18 @@ class AudioImageGame {
             const imgKey = this.images[i];
             const img = this.foodImages[imgKey];
             const pos = this.imagePositions[i];
-            const size = this.currentSizes.imageSize;
+            const size = this.currentSizes.drawImageSize;
+            const x = pos.x * this.dpr;
+            const y = pos.y * this.dpr;
             
             if (img && img.complete) {
                 // 绘制圆角图片
-                this.roundImage(ctx, img, pos.x, pos.y, size, size, 15 * this.scaleFactor);
+                this.roundImage(ctx, img, x, y, size, size, 15 * this.dpr * this.scaleFactor);
                 
                 // 绘制绿色边框表示已匹配
                 ctx.strokeStyle = this.config.colors.green;
-                ctx.lineWidth = 4 * this.scaleFactor;
-                this.roundRect(ctx, pos.x - 2, pos.y - 2, size + 4, size + 4, 17 * this.scaleFactor);
+                ctx.lineWidth = 4 * this.dpr * this.scaleFactor;
+                this.roundRect(ctx, x - 2 * this.dpr, y - 2 * this.dpr, size + 4 * this.dpr, size + 4 * this.dpr, 17 * this.dpr * this.scaleFactor);
                 ctx.stroke();
             }
         }
@@ -872,9 +904,11 @@ class AudioImageGame {
         // 绘制音频按钮
         for (let i = 0; i < this.audioButtonPositions.length; i++) {
             const pos = this.audioButtonPositions[i];
-            const size = pos.size;
-            const centerX = pos.x + size / 2;
-            const centerY = pos.y + size / 2;
+            const size = pos.drawSize;
+            const x = pos.drawX;
+            const y = pos.drawY;
+            const centerX = x + size / 2;
+            const centerY = y + size / 2;
             
             // 绘制圆形按钮
             ctx.fillStyle = this.config.colors.button;
@@ -883,25 +917,25 @@ class AudioImageGame {
             ctx.fill();
             
             ctx.strokeStyle = this.config.colors.black;
-            ctx.lineWidth = 2 * this.scaleFactor;
+            ctx.lineWidth = 2 * this.dpr * this.scaleFactor;
             ctx.stroke();
             
             // 播放图标
             ctx.fillStyle = this.config.colors.white;
             ctx.beginPath();
             const iconSize = size * 0.4;
-            ctx.moveTo(pos.x + size * 0.35, pos.y + size * 0.3);
-            ctx.lineTo(pos.x + size * 0.35, pos.y + size * 0.7);
-            ctx.lineTo(pos.x + size * 0.7, pos.y + size / 2);
+            ctx.moveTo(x + size * 0.35, y + size * 0.3);
+            ctx.lineTo(x + size * 0.35, y + size * 0.7);
+            ctx.lineTo(x + size * 0.7, y + size / 2);
             ctx.closePath();
             ctx.fill();
             
             // 高亮当前播放的音频
             if (i === this.currentPlayingAudio) {
                 ctx.strokeStyle = this.config.colors.green;
-                ctx.lineWidth = 3 * this.scaleFactor;
+                ctx.lineWidth = 3 * this.dpr * this.scaleFactor;
                 ctx.beginPath();
-                ctx.arc(centerX, centerY, size / 2 + 2 * this.scaleFactor, 0, Math.PI * 2);
+                ctx.arc(centerX, centerY, size / 2 + 2 * this.dpr * this.scaleFactor, 0, Math.PI * 2);
                 ctx.stroke();
             }
         }
