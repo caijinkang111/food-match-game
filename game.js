@@ -22,6 +22,18 @@ class AudioImageGame {
         this.imageToAudioMap = {};
         this.matchedPlateIndices = {};
         
+        // 新增：保存布局相关信息
+        this.layoutInfo = {
+            xPositions: [], // 基础x位置数组
+            randomOrder: [], // 随机顺序
+            startX: 0, // 起始x位置
+            spacing: 0, // 间距
+            imageSize: 0, // 图片尺寸
+            plateSize: 0, // 盘子尺寸
+            topMargin: 0, // 顶部边距
+            plateOffset: 0 // 盘子偏移
+        };
+        
         // 游戏配置 - 自适应大小
         this.config = {
             matchesNeeded: 5,
@@ -80,14 +92,6 @@ class AudioImageGame {
         // 计算并设置固定画布尺寸
         this.calculateAndSetCanvasSize();
         
-        // 添加窗口大小变化监听
-        window.addEventListener('resize', () => {
-            setTimeout(() => {
-                this.calculateAndSetCanvasSize();
-                this.draw();
-            }, 100);
-        });
-        
         // 加载资源
         this.loadResources().then(() => {
             console.log('资源加载完成');
@@ -100,8 +104,35 @@ class AudioImageGame {
             this.showError('资源加载失败，请刷新页面');
         });
         
+        // 窗口大小变化监听 - 修复：使用防抖避免频繁重绘
+        this.debouncedResize = this.debounce(() => {
+            this.calculateAndSetCanvasSize();
+            
+            // 如果在游戏中，重新计算位置但不重新随机化
+            if (this.gameState === 'gaming') {
+                this.recalculatePositions();
+            }
+            
+            this.draw();
+        }, 250);
+        
+        window.addEventListener('resize', () => this.debouncedResize());
+        
         // 键盘事件
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+    }
+    
+    // 防抖函数
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
     }
     
     // 计算并设置画布大小（优化版，适合所有设备）
@@ -153,11 +184,6 @@ class AudioImageGame {
         this.canvas.width = Math.round(this.fixedCanvasWidth * this.dpr);
         this.canvas.height = Math.round(this.fixedCanvasHeight * this.dpr);
         this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        
-        // 如果正在游戏中，重新计算位置
-        if (this.gameState === 'gaming') {
-            this.calculatePositions();
-        }
     }
     
     // 加载资源
@@ -460,7 +486,7 @@ class AudioImageGame {
         }
     }
     
-    // 计算位置 - 基于固定画布大小和缩放因子
+    // 计算位置 - 初始化布局信息
     calculatePositions() {
         const canvasWidth = this.fixedCanvasWidth;
         const canvasHeight = this.fixedCanvasHeight;
@@ -479,30 +505,45 @@ class AudioImageGame {
         const plateOffset = 200 * this.scaleFactor;
         const audioButtonOffset = 25 * this.scaleFactor;
         
-        const xPositions = [];
+        // 保存布局信息
+        this.layoutInfo = {
+            xPositions: [],
+            randomOrder: this.shuffleArray([...Array(this.config.matchesNeeded).keys()]),
+            startX: spacing,
+            spacing: spacing,
+            imageSize: imageSize,
+            plateSize: plateSize,
+            topMargin: topMargin,
+            plateOffset: plateOffset,
+            audioButtonOffset: audioButtonOffset
+        };
+        
+        // 计算x位置
         for (let i = 0; i < this.config.matchesNeeded; i++) {
-            xPositions.push(spacing + i * (imageSize + spacing));
+            this.layoutInfo.xPositions.push(spacing + i * (imageSize + spacing));
         }
         
         this.imagePositions = [];
         this.originalPositions = [];
+        this.platePositions = [];
+        this.audioButtonPositions = [];
         
-        const randomOrder = this.shuffleArray([...Array(this.config.matchesNeeded).keys()]);
+        // 计算图片位置
         for (let i = 0; i < this.config.matchesNeeded; i++) {
-            const x = xPositions[randomOrder[i]];
+            const x = this.layoutInfo.xPositions[this.layoutInfo.randomOrder[i]];
             const y = topMargin;
             this.imagePositions.push({ x, y });
             this.originalPositions.push({ x, y });
         }
         
-        this.platePositions = [];
+        // 计算盘子位置
         for (let i = 0; i < this.config.matchesNeeded; i++) {
-            const x = xPositions[i];
+            const x = this.layoutInfo.xPositions[i];
             const y = topMargin + imageSize + plateOffset;
             this.platePositions.push({ x, y });
         }
         
-        this.audioButtonPositions = [];
+        // 计算音频按钮位置
         for (let i = 0; i < this.config.matchesNeeded; i++) {
             const plateX = this.platePositions[i].x;
             const plateY = this.platePositions[i].y;
@@ -527,6 +568,95 @@ class AudioImageGame {
             drawPlateSize: plateSize * this.dpr,
             drawAudioButtonSize: audioButtonSize * this.dpr
         };
+    }
+    
+    // 新增：重新计算位置（窗口大小变化时调用）
+    recalculatePositions() {
+        if (!this.layoutInfo.xPositions || this.layoutInfo.xPositions.length === 0) {
+            console.log('没有布局信息，重新计算');
+            this.calculatePositions();
+            return;
+        }
+        
+        // 更新缩放因子相关的尺寸
+        const imageSize = this.config.imageSize * this.scaleFactor;
+        const plateSize = this.config.plateSize * this.scaleFactor;
+        const audioButtonSize = this.config.audioButtonSize * this.scaleFactor;
+        
+        // 更新当前尺寸
+        this.currentSizes = {
+            imageSize,
+            plateSize,
+            audioButtonSize,
+            scaleFactor: this.scaleFactor,
+            drawImageSize: imageSize * this.dpr,
+            drawPlateSize: plateSize * this.dpr,
+            drawAudioButtonSize: audioButtonSize * this.dpr
+        };
+        
+        // 重新计算x位置（保持相对布局）
+        const canvasWidth = this.fixedCanvasWidth;
+        const totalWidthNeeded = this.config.matchesNeeded * imageSize;
+        const availableSpace = canvasWidth - totalWidthNeeded;
+        const spacing = Math.max(availableSpace / (this.config.matchesNeeded + 1), 20 * this.scaleFactor);
+        
+        // 更新布局信息中的间距
+        this.layoutInfo.spacing = spacing;
+        this.layoutInfo.imageSize = imageSize;
+        this.layoutInfo.plateSize = plateSize;
+        this.layoutInfo.topMargin = 60 * this.scaleFactor;
+        this.layoutInfo.plateOffset = 200 * this.scaleFactor;
+        this.layoutInfo.audioButtonOffset = 25 * this.scaleFactor;
+        
+        // 重新计算x位置数组
+        this.layoutInfo.xPositions = [];
+        for (let i = 0; i < this.config.matchesNeeded; i++) {
+            this.layoutInfo.xPositions.push(spacing + i * (imageSize + spacing));
+        }
+        
+        // 更新盘子位置
+        for (let i = 0; i < this.config.matchesNeeded; i++) {
+            const x = this.layoutInfo.xPositions[i];
+            const y = this.layoutInfo.topMargin + imageSize + this.layoutInfo.plateOffset;
+            this.platePositions[i] = { x, y };
+        }
+        
+        // 更新音频按钮位置
+        for (let i = 0; i < this.config.matchesNeeded; i++) {
+            const plateX = this.platePositions[i].x;
+            const plateY = this.platePositions[i].y;
+            const x = plateX + (imageSize - audioButtonSize) / 2;
+            const y = plateY + plateSize + this.layoutInfo.audioButtonOffset;
+            this.audioButtonPositions[i] = { 
+                x, 
+                y, 
+                size: audioButtonSize,
+                drawX: x * this.dpr,
+                drawY: y * this.dpr,
+                drawSize: audioButtonSize * this.dpr
+            };
+        }
+        
+        // 重新计算图片位置（根据当前状态）
+        for (let i = 0; i < this.config.matchesNeeded; i++) {
+            if (this.correctMatches[i]) {
+                // 已匹配的图片：保持与盘子的相对位置
+                const plateIndex = this.matchedPlateIndices[i];
+                if (plateIndex !== undefined) {
+                    const platePos = this.platePositions[plateIndex];
+                    this.imagePositions[i].x = platePos.x + (plateSize - imageSize) / 2;
+                    this.imagePositions[i].y = platePos.y - imageSize + 15 * this.scaleFactor;
+                }
+            } else {
+                // 未匹配的图片：保持相对顺序，重新计算位置
+                const x = this.layoutInfo.xPositions[this.layoutInfo.randomOrder[i]];
+                const y = this.layoutInfo.topMargin;
+                this.imagePositions[i] = { x, y };
+                this.originalPositions[i] = { x, y };
+            }
+        }
+        
+        console.log('位置已重新计算，保持相对布局');
     }
     
     // 处理鼠标按下 - 修复版：正确处理坐标转换
