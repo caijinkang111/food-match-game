@@ -186,7 +186,7 @@ body {
     }
     
     .container {
-        max-width: 98vw;
+        max-width = 98vw;
         padding: 8px;
     }
     
@@ -226,9 +226,4 @@ body {
         min-height: 350px;
         margin-bottom: 5px;
     }
-}
-
-/* 移除了原来的 @media (max-width: 480px) 中的横屏提示功能 */
-@media (max-width: 480px) {
-    /* 移除了横屏提示功能，保留其他可能的样式调整 */
 }
