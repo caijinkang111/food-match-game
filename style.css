@@ -116,7 +116,7 @@ body {
 }
 
 .double-bounce2 {
-    animation-delay = -1.0s;
+    animation-delay: -1.0s;
 }
 
 @keyframes sk-bounce {
@@ -228,25 +228,7 @@ body {
     }
 }
 
+/* 移除了原来的 @media (max-width: 480px) 中的横屏提示功能 */
 @media (max-width: 480px) {
-    body::before {
-        content: "为了更好的游戏体验，建议将设备横屏或使用更大屏幕的设备";
-        display: block;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 0 20px rgba(0,0,0,0.3);
-        z-index: 100;
-        text-align: center;
-        width: 90%;
-        max-width: 300px;
-    }
-    
-    .container {
-        opacity: 0.3;
-    }
+    /* 移除了横屏提示功能，保留其他可能的样式调整 */
 }
