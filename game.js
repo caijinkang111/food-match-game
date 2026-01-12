@@ -388,40 +388,42 @@ class AudioImageGame {
         // 隐藏笑脸
         this.smileButton.visible = false;
         
-        this.selectRandomPairs();
+        this.selectFixedPairs();
         this.calculatePositions();
     }
     
-    // 选择随机配对（只使用1-5）
-    selectRandomPairs() {
+    // 选择固定配对
+    selectFixedPairs() {
         this.images = [];
         this.audios = [];
         this.imageToAudioMap = {};
         
-        // 只使用1-5
-        const allIndices = [1, 2, 3, 4, 5];
-        const selectedIndices = this.shuffleArray(allIndices).slice(0, this.config.matchesNeeded);
+        // 图片固定顺序：从左至右依次为5.jpg、3.jpg、1.jpg、2.jpg、4.jpg
+        const imageOrder = [5, 3, 1, 2, 4];
+        
+        // 音频按钮固定顺序：从左至右依次为1.mp3、2.mp3、3.mp3、4.mp3、5.mp3
+        const audioOrder = [1, 2, 3, 4, 5];
         
         for (let i = 0; i < this.config.matchesNeeded; i++) {
-            const index = selectedIndices[i];
-            this.images.push(`food_${index}`);
-            this.audios.push(`audio_${index}`);
+            this.images.push(`food_${imageOrder[i]}`);
+            this.audios.push(`audio_${audioOrder[i]}`);
         }
         
-        // 打乱音频顺序
-        this.shuffleArray(this.audios);
-        
-        // 建立映射关系
+        // 建立映射关系 - 根据图片数字找到对应的音频索引
         for (let i = 0; i < this.config.matchesNeeded; i++) {
-            const imageIndex = parseInt(this.images[i].split('_')[1]);
+            const imageIndex = imageOrder[i];
             for (let j = 0; j < this.config.matchesNeeded; j++) {
-                const audioIndex = parseInt(this.audios[j].split('_')[1]);
+                const audioIndex = audioOrder[j];
                 if (imageIndex === audioIndex) {
                     this.imageToAudioMap[i] = j;
                     break;
                 }
             }
         }
+        
+        console.log('图片顺序:', imageOrder);
+        console.log('音频顺序:', audioOrder);
+        console.log('映射关系:', this.imageToAudioMap);
     }
     
     // 计算位置
@@ -450,10 +452,9 @@ class AudioImageGame {
         this.imagePositions = [];
         this.originalPositions = [];
         
-        // 随机图片位置
-        const randomOrder = this.shuffleArray([...Array(this.config.matchesNeeded).keys()]);
+        // 图片按固定顺序排列（不再随机）
         for (let i = 0; i < this.config.matchesNeeded; i++) {
-            const x = xPositions[randomOrder[i]];
+            const x = xPositions[i];
             const y = topMargin;
             this.imagePositions.push({ x, y });
             this.originalPositions.push({ x, y });
@@ -536,7 +537,7 @@ class AudioImageGame {
             const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
             
             if (distance <= size / 2) {
-                console.log(`点击了音频按钮 ${i}`);
+                console.log(`点击了音频按钮 ${i} (音频: ${this.audios[i]})`);
                 this.playAudio(i);
                 return;
             }
@@ -951,16 +952,6 @@ class AudioImageGame {
         ctx.clip();
         ctx.drawImage(img, x, y, width, height);
         ctx.restore();
-    }
-    
-    // 随机打乱数组
-    shuffleArray(array) {
-        const shuffled = [...array];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled;
     }
 }
 
